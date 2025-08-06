@@ -1,1 +1,3 @@
-# resort-new-year-event-organizer-147253
+# Project Repository
+
+This is the initial README file for the project.
