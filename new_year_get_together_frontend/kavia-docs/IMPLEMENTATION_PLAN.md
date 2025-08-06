@@ -1,251 +1,232 @@
 # Implementation Plan: New Year Event Organizer React Frontend with Supabase Integration
 
-This document outlines the step-by-step plan for building a robust, maintainable, and modular React frontend for the New Year Event Organizer application. The application will use Supabase as its backend for authentication, database, and notification triggers. All main features, folder structure, and integration points are described to enable clarity and ease of review before the implementation phase begins.
+This implementation plan has been updated to fully align with the detailed requirements and UI/UX direction provided in the official design document. Any newly extracted screens, flows, layouts, and design system changes from the UX reference are integrated throughout. Use this as the canonical step-by-step guide for building the application with robust attention to the desired user experience.
 
 ---
 
 ## 1. **Initial Setup & Dependencies**
 
-- **Install Supabase**
-  - Add Supabase via npm:  
-    ```
-    npm install @supabase/supabase-js
-    ```
-- **Define Environment Variables:**  
-  Ensure the following are set (place them in a `.env` file at the project root):
-  - `REACT_APP_SUPABASE_URL=your_supabase_url`
-  - `REACT_APP_SUPABASE_KEY=your_supabase_anon_key`
-- **Other Dependencies**
-  - Use only minimal dependencies as per current standards; consider additions for routing (e.g., `react-router-dom`), state management (`context`), and date handling (optional: `date-fns` or similar).
+- **Install Supabase & Routing/UI Libraries**
+  - `npm install @supabase/supabase-js`
+  - Add `react-router-dom` for navigation and routing.
+  - Consider light icon set (e.g., `react-icons`) for festive motifs.
+- **Define Environment Variables**
+  - `.env` file at root (do not commit):
+    - `REACT_APP_SUPABASE_URL=your_supabase_url`
+    - `REACT_APP_SUPABASE_KEY=your_supabase_anon_key`
+- **Additional Recommendations**
+  - Use context for theme and language switching.
+  - Enable stepper/progress bar UI (for registration/event flows).
+  - Add a simple toast/notification system (for slide-in confirmation and engagement).
 
 ---
 
 ## 2. **Folder and File Structure**
 
-Organize the frontend for maintainability and scalability:
-
+Organize for maintainability, modularity, and UI flow:
 ```
 src/
-  api/            # Functions to handle all Supabase API requests
-  assets/         # Static assets: images, logos, icons
-  components/     # Reusable UI components
-  context/        # Context providers (e.g., Auth, Theme)
-  hooks/          # Custom React hooks (e.g., useAuth, useGroups)
-  pages/          # Top-level routes/pages (Dashboard, Auth, Groups, Rooms, Events, Food, Admin)
-  utils/          # Utility/helper functions (date formatting, validation)
-  supabaseClient.js # Supabase client initialization
-  App.js          # Main app shell, routes, layout
-  App.css         # Global styles and theming
-  index.js, index.css
+  api/                    # Supabase API logic
+  assets/                 # Images, logo, line icons, confetti svgs
+  components/             # Reusable UI widgets (Card, FAB, Modal, Icon, Toast, Stepper, ProgressBar, ButtonChip)
+  context/                # Providers: Auth, Theme, Notification
+  hooks/                  # Reusable hooks (e.g., useAuth, useGroup, useSnack)
+  pages/
+    Landing/              # Hero, registration entry, login
+    Registration/         # Multi-step, progress bar, validation
+    Groups/               # List, card/fab, join/create
+    Rooms/                # Grid, cards, selection logic
+    Events/               # List/schedule, RSVP, add-to-calendar, color-coded
+    Food/                 # Dietary preference, allergy, meal plan
+    Organizer/            # Dashboard, event CRUD, overview (table, calendar), notification mgmt
+    Notifications/        # Center, profile/settings (toggle cards)
+    Settings/             # Profile, theme toggle, language picker
+    Chat/                 # (Optional: festive chat bubbles)
+  utils/                  # Validation, formatting, accessibility helpers
+  supabaseClient.js
+  App.js, App.css, index.js, index.css
 ```
 
 ---
 
-## 3. **Supabase Client Setup**
+## 3. **Theming, Brand, and Style Guide**
 
-- Create `src/supabaseClient.js`
-  - Import `@supabase/supabase-js`
-  - Initialize Supabase using env vars
-  - Export the Supabase client for use throughout the app
-
----
-
-## 4. **Authentication Module**
-
-- **Auth Context**
-  - `src/context/AuthContext.js`: Provides auth state & methods (register, login, logout)
-  - Uses Supabase auth (email/password, optionally magic link)
-- **Integration**
-  - All protected routes/pages must check auth state from AuthContext
-  - Redirect to login if not authenticated
-- **UI**
-  - Create login, registration, and password reset forms in `src/pages/Auth/`
-  - Provide feedback for errors, success
-  
----
-
-## 5. **User Roles & Dashboards**
-
-- **Roles from Supabase**
-  - Attendee and Organizer are determined (e.g., via user metadata or a `role` column in a Supabase table)
-- **Routing**
-  - After auth, direct to appropriate dashboard:
-    - **Attendee Dashboard:** Groups, Rooms, Events, Food, Schedule
-    - **Organizer Dashboard:** Scheduling, Group/Event/Room/Food Admin, full event management
-- **Role Protection**
-  - Role-based route guards to restrict access to organizer-only features
+- **Color Theme**
+  - Primary accent: Festive Red (#D7263D)
+  - Background: Half White (#F6F6F6), Light Grey (#E6E6E6)
+  - Success/Available: Green ticks. Booked: Grey lock. Alerts/errors: Red highlights.
+- **Typography**
+  - Bold headings, clear readable body (sans-serif; Inter, Roboto recommended).
+- **Iconography**
+  - Simple line icons, subtle festive details (confetti, star). Icons must have ARIA labels.
+- **Layout**
+  - Cards for groups/events/rooms with shadow, white surface.
+  - Stepper interface for registration/event creation/editing.
+  - All screens mobile-first, responsive grid and layout.
+- **Feedback**
+  - Immediate: Glow/animation on selection, slide-in toasts for confirmation, red for key actions and errors.
+- **Accessibility**
+  - All controls are touch size and keyboard-accessible. ARIA, strong contrast, focus/validation states.
+- **General Mood**
+  - Festive but professional — all red accents subtle, never overwhelming; white/grey dominates background.
 
 ---
 
-## 6. **Group Module**
+## 4. **Screen-by-Screen Module Plan**
 
-- **Pages/UI:**
-  - View existing groups, create group, join/leave groups
-  - List group members, optionally group details
-- **Data:**
-  - Supabase table (`groups`, with membership tracking via separate join table or user field)
-- **Features:**
-  - Only authenticated users can join/leave
-  - User can belong to/lead a group
+### A. Landing Page & Registration
 
----
+- Hero header (confetti/star motif, logo left, CTA red "Get Started").
+- Language picker, login/register top right.
+- **Registration:** Multi-step (Personal > Group > Preferences), red-accent progress bar at top, outlined input fields (grey), field focus highlights in red, step validation and error states.
+- **Login:** Boxed layout on split grey/white background, quick login (email/phone), "Forgot password" link in red.
 
-## 7. **Room Selection Module**
+### B. Group Module
 
-- **UI:**
-  - Each group can select a room from an available list
-  - Show which rooms are booked/unavailable (real-time update or per fetch)
-  - Only one room per group
-- **Data:**
-  - Supabase table: `rooms` (room details, status), with relational data to `groups`
-- **Validation:**
-  - Prevent double-booking in Supabase logic or through frontend checks
+- **Group List:** Card layout, avatars for existing members (max 4 +overflow), "Create New Group" as floating red FAB.
+- **Group Modal:** Reusable modal overlays; overlay is subdued grey, content in white with red-highlighted confirmation, accessible ARIA labeling.
+- **Join/Leave:** Visible red join/group button, group details, instant feedback.
 
----
+### C. Stay/Room Selection
 
-## 8. **Event Participation & Activity Signup**
+- **Room Page:** Responsive grid of cards; each card shows room type/capacity and status (green tick=available, grey lock=booked).
+- **Selection:** Only one selectable per group, enforced visually (other cards disabled after selection), animated red glow on choose. All statefully validated per user/group.
 
-- **UI:**
-  - List all scheduled events and activities, with details and sign-up buttons
-  - Status per attendee (Signed up, Waitlist, etc.)
-- **Data:**
-  - Supabase table: `events`, with participation stored in `event_participants` join table
-  - Fetch and display event data, add/remove participation
-- **Feedback:**
-  - Success/error toasts on sign up
+### D. Event Participation
 
----
+- Calendar (schedule) view — event blocks color-coded by category (red for most), interactive drag/add to schedule, confirmation checks in red.
+- RSVP modal: attendee (individual/group) choice, event status update.
+- Toast/visual feedback on RSVP and schedule actions.
 
-## 9. **Food Preferences / Dietary Restrictions Module**
+### E. Food Preferences
 
-- **UI:**
-  - Attendees specify food choices, allergies, dietary restrictions
-  - Forms with checkboxes, free-text inputs
-- **Data:**
-  - Supabase table: `user_food_preferences` (linked to authenticated user)
-- **Access:**
-  - Attendees: view/edit their preferences
-  - Organizers: aggregated view for preparation
+- Button chips for dietary tags (outlined in red), structured editable meal plan per user in group.
+- Allergy and dietary warnings shown in red alert box.
+- All state changes confirmed visually.
 
----
+### F. Organizer Scheduling & Dashboard
 
-## 10. **Organizer Scheduling & Event Management**
+- **Event Dashboard:** Multi-step event creation/edit form (name, time, description, drag calendar integration).
+- Red-accent confirmation for actions, event tables (alternating grey/white rows, event names in red).
+- Full calendar (month/week/day views), today marked with red dot, drag-and-drop scheduling.
+- Confirmation modals (red-themed), all overlays ARIA-accessible.
 
-- **UI:**
-  - CRUD interface for events: create, edit, delete, view
-  - Select group(s)/attendees for events
-  - Drag-and-drop or form-based scheduling
-- **Data:**
-  - Mutate `events` table via Supabase
-- **Permissions:**
-  - Only organizer role can schedule/manage events
+### G. Notifications & Profile/Settings
+
+- **Notifications/Centre:** List events triggered, icons per type, slide-in toasts for new updates.
+- **Settings:** Toggle for email notifications and types (descriptions in light grey text).
+- Success toasts slide from top-right, always red-accented.
+- **Profile:** Cards in grey/white, settings toggles in festive red.
+
+### H. Extras/Optional
+
+- **Theme Toggle:** Day theme (white, grey), night/festive mode (deeper reds).
+- **Chat:** Festive-styled bubbles if implemented.
+- **Push Notifications:** Red pill/badge overlay if enabled.
 
 ---
 
-## 11. **Calendar/Schedule View**
+## 5. **Component Detail & Implementation Patterns**
 
-- **UI:**
-  - Visual interactive calendar (weekly/daily)
-  - Show events user is registered for or organizer has scheduled
-- **Data:**
-  - Fetch all relevant events from Supabase
-- **Library:**
-  - Use a lightweight React calendar library for rendering (or build basic in-house if needed)
-
----
-
-## 12. **Notifications Integration**
-
-- **Triggering Emails:**
-  - Call Supabase function (or trigger)—e.g., via `rpc`—on event scheduling to notify attendees via email
-  - Show in-app notification indicator for new events
-- **Feedback:**
-  - Confirmation message when organizers trigger notifications
+- **Header:** Logo left, event name centered, user/profile right; always on a red top bar.
+- **Card:** White, with drop shadow. Primary actions (Join/RSVP/Select) in bold red.
+- **Modal & Overlay:** Grey backgrounds, white content, main action in red, cancel/subtle actions below.
+- **Buttons:** Red for main confirm, default for others, always large tap targets.
+- **Input/Field:** Outlined, clean, focused and errors highlighted red. Progress bars/steppers in red.
+- **Table Rows:** Alternate gray/white. Event names always red.
+- **Icons:** Minimalist, clear, festive cues.
+- **Toast/Feedback:** Always for user action: add, RSVP, save, schedule, etc.
 
 ---
 
-## 13. **Responsive UI & Theming**
+## 6. **User Flows & Navigation**
 
-- **Responsiveness:**
-  - Use CSS flexbox/grid and media queries (`App.css`)
-  - Ensure all forms, tables, modals are mobile-friendly
-- **Theme:**
-  - Light theme default, with toggle (already partially implemented); harmonize with specified palette
-  - Define consistent design system in `App.css`
-- **Custom Components:**
-  - Build/extend reusable components (Buttons, Modals, Cards) in `src/components/`
+**Attendee:** Register ➔ Join/Create Group ➔ Select Room ➔ RSVP Events ➔ Set Food Preferences
 
----
+**Organizer:** Dashboard ➔ Add/Edit Event (multi-step) ➔ Notify Attendees (auto notification triggered)
 
-## 14. **Documentation & Comments**
+### Navigation:
 
-- **Code Documentation:**
-  - Inline comments for all modules and components
-- **README Updates:**
-  - Expand `README.md` with usage instructions, environment variable setup, module explanations, and example screens
-- **Mermaid and Architecture Diagrams:**
-  - Add diagrams to `/kavia-docs` and main `README.md` as needed
+- Landing > (if not auth) Login/Register (multi-step)
+- Main navigation: Dashboard (attendee/organizer) → Groups / Rooms / Events / Food / Calendar / Notifications / Settings
 
 ---
 
-## 15. **Future Enhancements (Stretch Goals)**
+## 7. **Feature Prioritization & Implementation Sequence**
 
-- Integrate push notification if supported
-- Add analytics or logging for admin
-- User avatars and profile customization
+1. **Core Scaffolding**
+    - App structure, theme provider, router, layout shell, branding colors/styles
+2. **Authentication & Role Context**
+    - Multi-step register, login, forgot password
+    - Auth context, role logic, guards
+3. **Dashboard & Navigation Shell**
+    - Side/top nav bar, role-based landing, responsive adjustment
+4. **Groups Module**
+    - Card list, create/join, FAB/button, modal workflows
+5. **Room Selection**
+    - Select-only grid cards, single-select logic, real-time status, animation
+6. **Event Module**
+    - Calendar/list view, RSVP/event add-toggle, event modal
+7. **Food Preferences**
+    - Editable chip UI, allergy indicators, aggregation for organizers
+8. **Organizer Scheduling**
+    - Organizer dashboard, event CRUD (table, calendar, modals)
+    - In-app notification/confirmation
+9. **Notifications & Engagement**
+    - Toast system, notification center/profile toggles, email/push triggers
+10. **Profile & Settings, Theme Toggle**
+    - Light/festive mode, profile update, toggles for notification prefs
+11. **Accessibility and Polish**
+    - Keyboard, ARIA, contrast passes
+12. **Testing, Documentation, & Review**
+    - Feature by feature QA, usage docs, final review
 
 ---
 
-## **Implementation Sequence**
+## 8. **Future/Optional Enhancements**
 
-1. Project setup and Supabase integration
-2. Implement authentication, context, and role management
-3. Scaffold main app layout and routing, dashboards
-4. Develop Group and Room modules (backend tables assumed ready)
-5. Add Event participation and Food preference modules
-6. Build Organizer scheduling/admin interface and notification logic
-7. Integrate calendar/schedule and visual polish
-8. Test, document, and summarize each feature
-9. Continuous UI/theming improvements and mobile testing
-10. Finalize and review with stakeholders
+- Festive chat (chat bubbles)
+- Mobile push notifications (red badge)
+- Avatar uploads, profile customization
 
 ---
 
-## **Summary Diagram: Folder Structure**
+## 9. **Diagrams & Visual References**
 
+### Folder Structure
 ```mermaid
 flowchart TD
-    A["src/"]
-    A1["api/"]
-    A2["components/"]
-    A3["context/"]
-    A4["hooks/"]
-    A5["pages/"]
-    A6["utils/"]
-    A7["assets/"]
-    A8["supabaseClient.js"]
-    A9["App.js, App.css, index.js, index.css"]
-    A-->A1
-    A-->A2
-    A-->A3
-    A-->A4
-    A-->A5
-    A-->A6
-    A-->A7
-    A-->A8
-    A-->A9
+    S["src/"]
+    S1["api/"]
+    S2["components/"]
+    S3["context/"]
+    S4["hooks/"]
+    S5["pages/"]
+    S6["utils/"]
+    S7["assets/"]
+    S8["supabaseClient.js"]
+    S9["App.js, App.css, index.js, index.css"]
+    S-->S1
+    S-->S2
+    S-->S3
+    S-->S4
+    S-->S5
+    S-->S6
+    S-->S7
+    S-->S8
+    S-->S9
 ```
 
 ---
 
-## **Notes**
+## 10. **General Notes & Accessibility**
 
-- Credentials and secrets must never be hard-coded—always use environment variables.
-- Supabase tables/functions should be finalized and reflected in code comments.
-- Role/permission logic must be reviewed at each phase.
-- Email notification logic may require backend support for custom triggers.
-- All modules are to be implemented with accessibility and responsiveness considered from the outset.
+- All modules/components must be mobile-friendly and pass accessibility checks.
+- Credentials/keys must always use environment variables.
+- All interaction patterns (registration stepper, FAB, chip, modal, alert, toast) must visually follow the design system.
+- Email notifications should be styled to match in-app alerts (red accent, clean white/grey body, clear CTA buttons).
+- ARIA/labeling, keyboard nav, and high contrast are mandatory.
 
 ---
 
-**Ready for user review and approval. Please review this plan for comprehensiveness, clarity, and completeness prior to starting development.**
+**This revised plan is now tightly aligned with the supplied UI/UX design brief and requirements. Each feature or screen references concrete layout/interaction needs, themed design, screen flow, and accessibility requirements. Use this as the authoritative plan for implementation.**
